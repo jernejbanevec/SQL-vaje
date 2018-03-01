@@ -1,0 +1,40 @@
+### REŠITVE IZ VAJ OPB
+
+## SELECT 
+#5.
+SELECT ime, priimek, kraj
+FROM oseba JOIN kraj
+ON oseba.posta = kraj.posta
+
+#6.
+(* WHERE kraj = 'Nova Gorica' *)
+
+## bolj komplicirane SELECT
+#1.
+SELECT count(*) FROM racun
+
+#2.
+SELECT count(*) FROM oseba
+WHERE posta = 1000
+
+#3.
+SELECT sum(znesek) FROM transakcija
+
+#4.
+SELECT sum(znesek) FROM transakcija
+WHERE racun = 100031
+
+#5.
+SELECT DISTINCT ime, priimek FROM oseba
+JOIN racun ON lastnik = emso
+JOIN transakcija ON racun = stevilka
+WHERE abs(znesek) >= 1000
+
+#6.
+SELECT DISTINCT ime || '' || priimek || ' iz kraja ' || kraj AS tajkun FROM oseba
+JOIN racun ON lastnik = emso
+JOIN transakcija ON racun = stevilka
+NATURAL JOIN kraj
+WHERE abs(znesek) >= 1000
+
+#7. DN
