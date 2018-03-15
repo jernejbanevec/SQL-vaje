@@ -1,0 +1,89 @@
+
+#JOIN
+
+#1
+SELECT ime FROM oseba
+LEFT JOIN  traktor ON lastnik = oseba.id
+WHERE traktor.id IS NULL
+
+#2
+SELECT stars.ime AS stars, otrok.ime AS otrok
+FROM oseba AS stars
+JOIN otroci ON stars.id = stars
+JOIN oseba AS otrok ON otrok = otrok.id
+
+#3 napačna
+SELECT DISTINCT stars.* 
+FROM oseba AS stars
+JOIN otroci ON stars.id = stars
+JOIN oseba AS otrok ON otrok = otrok.id
+JOIN traktor ON lastnik = otrok.id
+WHERE otrok.rojstvo + '10 years'::INTERVAL > nakup
+
+#4
+SELECT vnuk.ime AS vnuk, stari_stars.ime AS stari_stars
+FROM oseba AS stari_stars
+JOIN otroci AS o1 ON stari_stars.id = o1.stars
+JOIN otroci AS o2 ON o1.otrok = o2.stars
+RIGHT JOIN oseba AS vnuk ON o2.otrok = vnuk.id
+
+##alternativno
+SELECT vnuk.ime AS vnuk, stari_stars.ime AS stari_stars
+FROM oseba AS vnuk
+LEFT JOIN (
+   oseba AS stari_stars
+   JOIN otroci AS o1 ON stari_stars.id = o1.stars
+   JOIN otroci AS o2 ON o1.otrok = o2.stars
+) ON o2.otrok = vnuk.id
+
+
+#GROUP BY, HAVING
+
+#1
+SELECT stars, count(*) FROM otroci
+GROUP BY stars
+
+#2
+SELECT ime, count(traktor.id) FROM znamka
+LEFT JOIN traktor ON znamka = znamka.id
+GROUP BY ime
+
+#3
+SELECT id, ime, sum(coalesce(stevilo, 0)) FROM oseba
+LEFT JOIN deli ON lastnik = id
+GROUP BY id, ime
+HAVING sum(coalesce(stevilo, 0)) <=1
+
+#4
+SELECT lastnik, ime FROM traktor
+JOIN oseba ON lastnik = oseba.id
+GROUP BY lastnik, ime
+ORDER BY sum(now() - nakup) DESC
+LIMIT 1
+
+## če izpišemo količino izkušenj, kjer vemo da je 15 minut 1/96 dneva
+SELECT lastnik, ime, sum((now() - nakup)/96) FROM traktor
+JOIN oseba ON lastnik = oseba.id
+GROUP BY lastnik, ime
+ORDER BY sum(now() - nakup) DESC
+
+#5 pri USING obvezno uporabi oklepaje
+SELECT tip, count(DISTINCT traktor.id) FROM deli
+LEFT JOIN traktor USING (znamka)
+GROUP BY tip  
+
+#6
+SELECT extract(day FROM rojstvo) || '. ' ||extract(month FROM rojstvo) || '.' AS rojstni_dan FROM oseba
+GROUP BY rojstni_dan
+HAVING count(*) >= 2
+
+## alternativno
+SELECT to_char(rojstvo, 'FMDD. FMMM.') AS rojstni_dan FROM oseba
+GROUP BY rojstni_dan
+HAVING count(*) >= 2
+
+## še bolj alternativno
+SELECT DISTINCT to_char(o1.rojstvo, 'FMDD. FMMM.') AS rojstni_dan FROM oseba AS o1
+JOIN oseba AS o2
+ON to_char(o1.rojstvo, 'FMDD. FMMM.') = to_char(o2.rojstvo, 'FMDD. FMMM.')
+AND o1.id <> o2.id

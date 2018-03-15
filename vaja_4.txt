@@ -1,0 +1,103 @@
+
+
+#
+SELECT lastnik, coalesce(traktor_premozenje.vrednost, 0) +
+coalesce(deli_premozenje.vrednost, 0) AS deli
+FROM traktorji_premozenje
+FULL JOIN deli_premozenje
+USING (lasnik)
+
+#2
+SELECT * FROM oseba
+WHERE NOT EXISTS (
+  SELECT otrok FROM otroci
+  JOIN traktor ON lastnik = otrok
+  WHERE barva = 'rdeca'
+  AND stars = oseba.id
+)
+
+#2 ALTERNATIVNO
+SELECT oseba.* FROM otroci
+JOIN traktor ON lastnik = otrok AND barva = 'rdeca'
+RIGHT JOIN oseba ON stars = oseba.id
+WHERE otrok IS NULL
+
+#3
+SELECT lastnik, sum(stevilo) FROM deli
+WHERE znamka NOT IN (
+  SELECT znamka FROM traktor
+  WHERE lastnik = deli.lastnik
+)
+GROUP BY lastnik
+
+#4
+SELECT ime FROM oseba
+JOIN traktor ON lastnik = oseba.id
+GROUP BY lastnik, ime
+ORDER BY count(DISTINCT znamka) DESC
+LIMIT 1
+
+#4 VSI NAJVEČJI 
+SELECT ime, count(DISTINCT znamka) FROM oseba 
+JOIN traktor ON lastnik = oseba.id
+GROUP BY lastnik, ime
+HAVING count(DISTINCT znamka) >= ALL (
+  SELECT count(DISTINCT znamka) FROM traktor
+  GROUP BY lastnik
+)
+
+#4 Z UPORABO WITH -> HIPERALTERNATIVNO :D
+WITH razlicne_znamke AS (
+  SELECT lastnik, count(DISTINCT znamka) AS stevilo FROM traktor
+  GROUP BY lastnik
+)
+SELECT ime, stevilo FROM oseba 
+JOIN razlicne_znamke ON lastnik = oseba.id
+WHERE stevilo >= ALL (
+  SELECT stevilo FROM razlicne_znamke
+)
+
+#5 uvod alneki
+tako dobimo vse starše, ki imajo vsaj 1 otroka
+(SELECT * FROM oseba
+WHERE EXISTS (
+  SELECT otrok FROM otroci
+  WHERE stars = id
+))
+
+#5
+SELECT * FROM oseba
+WHERE EXISTS (
+  SELECT otrok FROM otroci
+  WHERE stars = id
+) AND EXISTS (
+  SELECT id FROM znamka
+  WHERE NOT EXISTS (
+    SELECT otrok FROM otroci -- seznam otrok minus seznam lastnikov te znamke
+    WHERE stars = oseba.id -- če bi blo le id bi šli vn do traktrojev
+    EXCEPT
+    SELECT lastnik FROM traktor
+    WHERE znamka = znamka.id -- podobno tudi tu
+  )
+)    
+
+#6
+ -- za vsako osebo želimo velikost družine oz. povemo kateri so družinski člani
+WITH druzine AS (
+  SELECT id, id AS clan FROM oseba
+  UNION
+  SELECT otrok, stars FROM otroci
+)
+SELECT clan, sum(stevilo/velikost::real) AS razpolozljivost FROM druzine -- deljenje tu je celoštevilsko
+JOIN deli ON lastnik = id
+JOIN (
+  SELECT id, count(*) AS velikost FROM druzine
+  GROUP BY id
+) AS t USING (id)
+GROUP BY clan
+
+#7
+SELECT DISTINCT oseba.* FROM oseba
+JOIN traktor AS t1 ON t1.lastnik = oseba.id
+JOIN traktor AS t2 ON t2.lastnik = oseba.id
+WHERE t1.id <> t2.id
