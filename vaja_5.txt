@@ -1,0 +1,62 @@
+
+# SQL STAVKI ZA TABELE V ZVEZKU
+
+# Zacnemo tam kjer imamo samo eno puscico vn! 
+CREATE TABLE pacient(
+  emso text PRIMARY KEY,
+  ime text NOT NULL,
+  naslov text NOT NULL,
+  starost integer NOT NULL
+);
+
+CREATE TABLE podjetje(
+  ime text PRIMARY KEY,
+  telefon text NOT NULL
+);
+
+CREATE TABLE lekarna(
+  ime text PRIMARY KEY,
+  naslov text NOT NULL,
+  telefon text NOT NULL
+);
+
+CREATE TABLE zdravilo(
+  ime text,
+  formula NOT NULL,
+  proizvajalec text REFERENCES podjetje(ime)
+  # REFERENCES tabela(stolpci)
+  #  ON UPDATE RESTRICT -- ne dovoli spreminjanja
+  #			   CASCADE -- lahko spreminjaš (?)
+  #  ON DELETE SET NULL -- nastavi na null
+						ON UPDATE CASCADE
+						ON DELETE CASCADE,
+  PRIMAREY KEY(ime, proizvajalec)
+);
+
+CREATE TABLE pogodba(
+  lekarna text REFERENCES lekarna(ime)
+						ON UPDATE CASCADE
+						ON DELETE RESTRICT,
+  podjetje text REFERENCES podjetje(ime)
+						ON UPDATE RESTRICT
+						ON DELETE RESTRICT,
+  zacetek date NOT NULL,
+  konec date NOT NULL,
+  besedilo text NOT NULL,
+  PRIMAREY KEY(lekarna, podjetje)
+);
+
+CREATE TABLE zdravnik
+  emso text PRIMAREY KEY
+  ime text NOT NULL,
+  specialist text NOT NULL,
+  izkusnje integer NOT NULL,
+  zaposlen text REFERENCES lekarna(ime)
+		ON DELETE SET NULL,
+  lekarna text -- lahko je NULL,
+  podjetje text,
+  FOREIGN KEY (lekarna, podjetje) 
+	REFERENCES pogodba(lekarna, podjetje)
+		ON DELETE SET NULL
+		ON UPDATE RESTRICT
+);
