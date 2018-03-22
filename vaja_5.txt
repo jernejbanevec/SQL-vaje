@@ -58,5 +58,6 @@ CREATE TABLE zdravnik
   FOREIGN KEY (lekarna, podjetje) 
 	REFERENCES pogodba(lekarna, podjetje)
 		ON DELETE SET NULL
-		ON UPDATE RESTRICT
+		ON UPDATE RESTRICT 
 );
+#morda bi bil obolje če bi naredili drugače
